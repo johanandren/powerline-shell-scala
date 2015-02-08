@@ -1,37 +1,34 @@
-/**
- *
- */
-abstract class Segment {
-  val content: String
-  val contentFg: Int
-  val contentBg: Int
+package powerline.bash
 
-  def draw(next: Option[Segment]): String
+import powerline.Segment
+
+sealed trait BashSegment extends Segment {
+  def contentFg: Int
+  def contentBg: Int
 }
-
-import PowerlineServer._
 
 case class NormalSegment(content: String,
                          contentFg: Int,
                          contentBg: Int,
                          sep: String,
                          sepFg: Int)
-  extends Segment {
+  extends BashSegment {
 
-  override def draw(next: Option[Segment]) = {
+  import powerline.bash.BashPrompt._
+
+  override def draw(next: Option[Segment]): String = {
     List(fgcolor(contentFg), bgcolor(contentBg), content,
       fgcolor(sepFg), bgcolor(contentBg), sep) mkString ""
   }
 }
 
-case class LastSegment(content: String,
-                       contentFg: Int,
-                       contentBg: Int)
-  extends Segment {
+case class LastSegment(content: String, contentFg: Int, contentBg: Int) extends BashSegment {
 
-  override def draw(next: Option[Segment]) = {
+  import powerline.bash.BashPrompt._
+
+  override def draw(next: Option[Segment]): String = {
     val sepBgColorStr = next match {
-      case Some(seg) => bgcolor(seg.contentBg)
+      case Some(seg: BashSegment) => bgcolor(seg.contentBg)
       case None => RESET
     }
     List(fgcolor(contentFg), bgcolor(contentBg), content,

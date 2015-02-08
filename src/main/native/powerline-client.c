@@ -41,6 +41,11 @@ int main(int argc, char **argv) {
   struct hostent *server;
   char buf[BUFSIZE];
 
+  if (argc != 2) {
+    error("usage: powerline-client prev-cmd-exit-status");
+    exit(1);
+  }
+
   /* socket: create the socket */
   sockfd = socket(AF_INET, SOCK_STREAM, 0);
   if (sockfd < 0)
