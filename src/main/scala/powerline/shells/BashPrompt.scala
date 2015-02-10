@@ -5,11 +5,10 @@ import powerline._
 object BashPrompt {
 
   // Bash prompt color escape string
-  private def asciiEscape(str: String) = s"""\\[\\e$str\\]"""
-  private val reset = asciiEscape("[0m")
+  private val reset = "\033[0m"
 
   def color(prefix: String, code: Int) =
-    asciiEscape(s"[$prefix;5;${code}m")
+    s"\033[$prefix;5;${code}m"
 
   def fgcolor(code: Color) =
     color("38", code.n)
