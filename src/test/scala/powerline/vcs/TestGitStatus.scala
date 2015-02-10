@@ -1,7 +1,8 @@
+package powerline.vcs
+
 import java.io.File
 
 import org.scalatest.FunSuite
-import powerline.vcs.GitRepo
 
 /**
  */

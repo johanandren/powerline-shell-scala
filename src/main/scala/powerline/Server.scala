@@ -3,6 +3,7 @@ package powerline
 import java.io.{File, BufferedReader, InputStreamReader, PrintStream}
 import java.net.{InetAddress, ServerSocket, Socket}
 
+import powerline.shells.PromptGenerator
 import powerline.vcs.GitRepo
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -10,6 +11,8 @@ import scala.concurrent.Future
 import scala.util.Try
 
 class Server(config: AppConfig) {
+
+  val generator = new PromptGenerator(config)
 
   def start() {
     try {
@@ -31,16 +34,23 @@ class Server(config: AppConfig) {
       val in = new BufferedReader(new InputStreamReader(socket.getInputStream))
       val out = new PrintStream(socket.getOutputStream)
 
-      val req = createRequest(in)
+      val req = parseRequest(in)
       debug(s"Request: $req")
 
-      req.map { request =>
+      val request = req.get
 
-        val promptText = config.shell.newPromptText(request)
-
-        debug(s"Prompt: $promptText")
-        out.print(promptText)
+      val renderer = request.shellName.toLowerCase match {
+        case "bash" => shells.BashPrompt.render _
+        case "zsh" => shells.ZshPrompt.render _
+        case x => (seg: Seq[Segment]) => s"$x is an unknown shell"
       }
+
+      val prompt = generator.generate(request)
+      val promptText = renderer(prompt)
+
+      debug(s"Prompt: $promptText")
+      out.print(promptText)
+
 
       in.close()
       out.close()
@@ -49,31 +59,22 @@ class Server(config: AppConfig) {
     } recover {
       case x: Exception =>
         debug(s"Got error handling connection $x")
+        x.printStackTrace()
         throw x
     }
   }
 
-
-  private def createRequest(in: BufferedReader): Try[Request] =
-    parseProtocol(in).map { case (cwd, previousStatus, winWidth) =>
-      val vcsRepo = GitRepo(cwd)
-
-      // TODO should not come from here but from the message, (the user may have sudo:d etc.)
-      val home = new File(System.getenv("HOME"))
-      val username = System.getenv("USER")
-
-      Request(cwd, previousStatus, winWidth, home, username, vcsRepo)
-    }
-
-
-  private def parseProtocol(in: BufferedReader): Try[(File, Int, Int)] =
+  private def parseRequest(in: BufferedReader): Try[Request] =
     for {
-      cwd <- Try(in.readLine())
+      shell <- Try(in.readLine())
+      currentDirectory <- Try(in.readLine())
       previousStatusTxt <- Try(in.readLine())
-      winWidthTxt <- Try(in.readLine())
       previousStatus <- Try(previousStatusTxt.toInt)
+      winWidthTxt <- Try(in.readLine())
       winWidth <- Try(winWidthTxt.toInt)
-    } yield (new File(cwd), previousStatus, winWidth)
+      home <- Try(in.readLine())
+      user <- Try(in.readLine())
+    } yield Request(shell, new File(currentDirectory), previousStatus, winWidth, new File(home), user)
 
 
  private def debug(msg: => String): Unit = if (config.debug) println(msg)

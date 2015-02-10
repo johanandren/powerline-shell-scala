@@ -41,8 +41,8 @@ int main(int argc, char **argv) {
   struct hostent *server;
   char buf[BUFSIZE];
 
-  if (argc != 2) {
-    error("usage: powerline-client prev-cmd-exit-status");
+  if (argc != 3) {
+    error("usage: powerline-client <SHELL> <prev-cmd-exit-status>");
     exit(1);
   }
 
@@ -71,7 +71,10 @@ int main(int argc, char **argv) {
 
   /* get current pwd and return code */
   char* pwd_msg = prepare_msg(getenv(PWD));
-  char* ret_msg = prepare_msg(argv[1]);
+  char* shell = prepare_msg(argv[1]);
+  char* ret_msg = prepare_msg(argv[2]);
+  char* home = prepare_msg(getenv("HOME"));
+  char* user = prepare_msg(getenv("USER"));
 
   /* get current console window width */
   struct winsize ws;
@@ -81,16 +84,25 @@ int main(int argc, char **argv) {
   char* win_width_msg = prepare_msg(win_width);
 
   /* write: send the messages to the server */
+  if (write(sockfd, shell, strlen(shell)) < 0)
+    error("ERROR writing to powerline server");
   if (write(sockfd, pwd_msg, strlen(pwd_msg)) < 0)
     error("ERROR writing to powerline server");
   if (write(sockfd, ret_msg, strlen(ret_msg)) < 0)
     error("ERROR writing to powerline server");
   if (write(sockfd, win_width_msg, strlen(win_width_msg)) < 0)
     error("ERROR writing to powerline server");
+  if (write(sockfd, home, strlen(home)) < 0)
+    error("ERROR writing to powerline server");
+  if (write(sockfd, user, strlen(user)) < 0)
+    error("ERROR writing to powerline server");
 
+  free(shell);
   free(pwd_msg);
   free(ret_msg);
   free(win_width_msg);
+  free(home);
+  free(user);
 
   /* read: print the server's reply */
   bzero(buf, BUFSIZE);
