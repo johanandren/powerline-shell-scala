@@ -1,6 +1,9 @@
 powerline-shell-scala
 =====================
 
+Under rework, no guarantees that it works at any given moment
+
+
 A re-implementation of powerline-shell in Scala
 
 ![powerline-shell-scala](http://imgur.com/9SVFfUw.png)
