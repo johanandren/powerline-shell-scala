@@ -1,10 +1,7 @@
 package powerline
 
-import java.io.{File, BufferedReader, InputStreamReader, PrintStream}
+import java.io.{BufferedReader, File, InputStreamReader, PrintStream}
 import java.net.{InetAddress, ServerSocket, Socket}
-
-import powerline.shells.PromptGenerator
-import powerline.vcs.GitRepo
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

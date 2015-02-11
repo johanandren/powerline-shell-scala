@@ -1,8 +1,7 @@
-package powerline.shells
+package powerline
 
 import java.io.File
 
-import powerline._
 import powerline.vcs.{GitRepo, VCSRepo}
 
 object PromptGenerator {
@@ -17,7 +16,7 @@ object PromptGenerator {
 
 final class PromptGenerator(config: AppConfig) {
 
-  import PromptGenerator._
+  import powerline.PromptGenerator._
 
   private def theme = config.theme
 
@@ -41,7 +40,7 @@ final class PromptGenerator(config: AppConfig) {
     )
   }
 
-  private def interleaveSeparators(sections: Seq[Section]): Seq[Segment] = {
+  private[powerline] def interleaveSeparators(sections: Seq[Section]): Seq[Segment] = {
     // add separators
     val options = sections.map(Some.apply)
     val shifted = options.tail :+ None
@@ -66,11 +65,11 @@ final class PromptGenerator(config: AppConfig) {
   }
 
 
-  private[shells] def userSegments(user: String) =
+  private[powerline] def userSegments(user: String) =
     Section(Seq(Segment(s" $user ", theme.user)))
-  
-  
-  private[shells] def pathSegments(path: File, maxLen: Int, home: File) = {
+
+
+  private[powerline] def pathSegments(path: File, maxLen: Int, home: File) = {
     val pathWithHome = path.getAbsolutePath.replace(home.getAbsolutePath, homeSymbol)
     val parts = pathWithHome.split("/")
 
@@ -85,7 +84,7 @@ final class PromptGenerator(config: AppConfig) {
     Section(segments)
   }
 
-  private[shells] def vcsStatus(repo: VCSRepo) = {
+  private[powerline] def vcsStatus(repo: VCSRepo) = {
     val modifier =
       if (repo.isClean) ""
       else "*"
@@ -102,7 +101,7 @@ final class PromptGenerator(config: AppConfig) {
     )))
   }
 
-  private def gitExtra(repo: GitRepo): String = {
+  private[powerline] def gitExtra(repo: GitRepo): String = {
     val ahead = repo.ahead
 
     val aText =
@@ -117,7 +116,7 @@ final class PromptGenerator(config: AppConfig) {
     s"$aText $bText"
   }
 
-  private[shells] def previousCmdIndicator(retCode: Int): Seq[Segment] =
+  private[powerline] def previousCmdIndicator(retCode: Int): Seq[Segment] =
     Seq(Segment(
       s" $filledSeparator",
       if (retCode != 0) theme.cmdFailed
