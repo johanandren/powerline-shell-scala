@@ -34,28 +34,27 @@ class Server(config: AppConfig) {
       val in = new BufferedReader(new InputStreamReader(socket.getInputStream))
       val out = new PrintStream(socket.getOutputStream)
 
-      val req = parseRequest(in)
-      debug(s"Request: $req")
+      try {
+        val request = parseRequest(in).get
+        debug(s"Request: $request")
 
-      val request = req.get
+        val renderer: Seq[Segment] => String = request.shellName.toLowerCase match {
+          case "bash" => shells.BashPrompt.render
+          case "zsh" => shells.ZshPrompt.render
+          case x => (seg) => s"$x is an unknown shell"
+        }
 
-      val renderer = request.shellName.toLowerCase match {
-        case "bash" => shells.BashPrompt.render _
-        case "zsh" => shells.ZshPrompt.render _
-        case x => (seg: Seq[Segment]) => s"$x is an unknown shell"
+        val prompt = generator.generate(request)
+        val promptText = renderer(prompt)
+
+        debug(s"Prompt: $promptText")
+        out.print(promptText)
+
+      } finally {
+        in.close()
+        out.close()
+        socket.close()
       }
-
-      val prompt = generator.generate(request)
-      val promptText = renderer(prompt)
-
-      debug(s"Prompt: $promptText")
-      out.print(promptText)
-
-
-      in.close()
-      out.close()
-      socket.close()
-
     } recover {
       case x: Exception =>
         debug(s"Got error handling connection $x")

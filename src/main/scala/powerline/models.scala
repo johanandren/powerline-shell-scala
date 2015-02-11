@@ -24,7 +24,5 @@ case class Request(
 
 
 
-sealed trait Segment
-
-case class TextSegment(content: String, style: Style) extends Segment
-case class SectionSeparator(separator: String) extends Segment
+case class Segment(text: String, style: Style)
+case class Section(segments: Seq[Segment])

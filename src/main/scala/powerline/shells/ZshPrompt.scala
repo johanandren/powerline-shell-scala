@@ -13,10 +13,11 @@ object ZshPrompt {
   def styled(str: String, style: Style): String =
     fgColor(style.fg) + bgColor(style.bg) + str + reset
 
+  def renderSection(section: Section) =
+    section.segments.map(segment => styled(segment.text, segment.style))
+
   def render(prompt: Seq[Segment]): String =
-    prompt.map {
-      case TextSegment(text, style) => styled(text, style)
-      case SectionSeparator(text) => text
-    }.mkString("")
+    prompt.map(seg => styled(seg.text, seg.style)).mkString + reset
+
 
 }

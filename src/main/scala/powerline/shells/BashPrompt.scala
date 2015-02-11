@@ -19,12 +19,7 @@ object BashPrompt {
   def styled(text: String, style: Style): String =
     fgcolor(style.fg) + bgcolor(style.bg) + text
 
-  def render(prompt: Seq[Segment]): String = prompt.map {
-    case TextSegment(text, style) => styled(text, style)
-    case SectionSeparator(text) => text
-  }.mkString("") + reset
+  def render(prompt: Seq[Segment]): String =
+    prompt.map(segment => styled(segment.text, segment.style)).mkString + reset
 
 }
-
-
-
