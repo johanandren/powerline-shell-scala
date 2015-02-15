@@ -34,6 +34,7 @@ final class PromptGenerator(config: AppConfig) {
 
     val promptWithSeparators = interleaveSeparators(sections)
 
+    // handle prompt end differently, no separator between that and previous
     promptWithSeparators :+ Segment(filledSeparator,
       if (request.previousCmdStatus == 0) theme.cmdPassed
       else theme.cmdFailed
@@ -72,7 +73,6 @@ final class PromptGenerator(config: AppConfig) {
   private[powerline] def pathSegments(path: File, home: File, maxPromptLength: Int): Section = {
     val promptifiedPath = Path.promptify(path, home, maxPromptLength)
 
-    println(maxPromptLength)
     var cwd: String =
       if (promptifiedPath.length == 1) promptifiedPath(0)
       else promptifiedPath.last
@@ -85,6 +85,7 @@ final class PromptGenerator(config: AppConfig) {
       if (!path.canWrite) lock + " " + cwd
       else cwd
 
+    // separate with symbol and pad names
     val segments = parents.flatMap(part =>
       Seq(Segment(s" $part ", theme.path), Segment(dirSeparator, theme.separator))
     ) :+ Segment(s" $cwd ", theme.cwd)
@@ -100,20 +101,23 @@ final class PromptGenerator(config: AppConfig) {
     }
 
     Section(Seq(Segment(
-      s" $vcsSymbol ${repo.currentBranch} $extra",
+      s" $vcsSymbol ${repo.currentBranch}$extra",
       if (repo.clean) theme.repoClean else theme.repoDirty
     )))
   }
 
   private[powerline] def gitExtra(repo: GitRepo): String = {
     val ahead = repo.ahead
-
-    val aText = ahead.filter(_ > 0).map(a => s"↑$a").getOrElse("")
-
     val behind = repo.behind
-    val bText = behind.filter(_ > 0).map(b => s"↓$b").getOrElse("")
 
-    s"$aText $bText"
+    if (ahead.isDefined || behind.isDefined) {
+      val aText = ahead.filter(_ > 0).map(a => s"↑$a").getOrElse("")
+      val bText = behind.filter(_ > 0).map(b => s"↓$b").getOrElse("")
+
+      s" $aText $bText"
+    } else {
+      ""
+    }
   }
 
   private[powerline] def previousCmdIndicator(retCode: Int): Seq[Segment] =
