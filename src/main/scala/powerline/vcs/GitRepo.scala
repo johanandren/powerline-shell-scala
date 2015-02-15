@@ -7,29 +7,28 @@ import org.eclipse.jgit.lib.BranchTrackingStatus
 
 object GitRepo {
 
+  // recursively looks for a git repo in the given path
   def apply(path: File): Option[GitRepo] =
     try {
       if (path.getAbsolutePath == "/") None  // TODO bug in JGit ???
       else Some(new GitRepo(Git.open(path)))
     } catch {
-      case e: Exception => None
+      case e: Exception =>
+        apply(path.getParentFile)
     }
   
 }
 
-/**
- * Checks git repo status (clean, branch)
- */
 class GitRepo(git: Git) extends VCSRepo {
 
-  def isClean =
-    git.status().call().isClean
+  lazy val status = git.status().call()
+  println(status.isClean + " " + status.hasUncommittedChanges() + " " + status.getUntracked)
+  def clean = status.isClean
 
+  lazy val trackingStatus = Option(BranchTrackingStatus.of(git.getRepository, git.getRepository.getBranch))
 
-  lazy val trackingStatus = BranchTrackingStatus.of(git.getRepository, git.getRepository.getBranch)
-
-  def behind = trackingStatus.getBehindCount
-  def ahead = trackingStatus.getAheadCount
+  def behind: Option[Int] = trackingStatus.map(_.getBehindCount)
+  def ahead: Option[Int] = trackingStatus.map(_.getAheadCount)
 
   def currentBranch =
     git.getRepository.getBranch

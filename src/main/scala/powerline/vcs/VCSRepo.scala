@@ -5,7 +5,7 @@ package powerline.vcs
  * this interface
  */
 trait VCSRepo {
-  def isClean: Boolean
-  def isDirty: Boolean = !isClean
+  def clean: Boolean
+  def dirty: Boolean = !clean
   def currentBranch: String
 }

@@ -5,13 +5,14 @@ import java.io.File
 import powerline.vcs.{GitRepo, VCSRepo}
 
 object PromptGenerator {
-  val homeSymbol = "~"
+
   val filledSeparator = "\uE0B0"
   val thinSeparator = "\uE0B1"
   val ellipsis = "\u2026"
 
   val dirSeparator = thinSeparator
   val vcsSymbol = "\uE0A0"
+  val lock = "\uD83D\uDD12"
 }
 
 final class PromptGenerator(config: AppConfig) {
@@ -23,18 +24,17 @@ final class PromptGenerator(config: AppConfig) {
   def generate(request: Request): Seq[Segment] = {
 
     // calculate max length for PWD segments
-    val maxPromptLen = ((request.winWidth + request.home.length - 3) * 0.4f).toInt
 
     // create the basic segments
     val sections: Seq[Section] = Seq(
       Some(userSegments(request.username)),
-      Some(pathSegments(request.cwd, maxPromptLen, request.home)),
+      Some(pathSegments(request.cwd, request.home, request.maxPromptLength)),
       request.vcs.map(vcsStatus)
     ).flatten
 
     val promptWithSeparators = interleaveSeparators(sections)
 
-    promptWithSeparators :+ Segment(thinSeparator,
+    promptWithSeparators :+ Segment(filledSeparator,
       if (request.previousCmdStatus == 0) theme.cmdPassed
       else theme.cmdFailed
     )
@@ -69,49 +69,49 @@ final class PromptGenerator(config: AppConfig) {
     Section(Seq(Segment(s" $user ", theme.user)))
 
 
-  private[powerline] def pathSegments(path: File, maxLen: Int, home: File) = {
-    val pathWithHome = path.getAbsolutePath.replace(home.getAbsolutePath, homeSymbol)
-    val parts = pathWithHome.split("/")
+  private[powerline] def pathSegments(path: File, home: File, maxPromptLength: Int): Section = {
+    val promptifiedPath = Path.promptify(path, home, maxPromptLength)
 
-    val segments: Seq[Segment] =
-      if (parts.size == 1) {
-        Seq(Segment(s" ${parts.head} ", theme.cwd))
-      } else {
-        parts.init.flatMap(part =>
-          Seq(Segment(s" $part ", theme.path), Segment(dirSeparator, theme.separator))
-        ) :+ Segment(s" ${parts.last} ", theme.cwd)
-      }
+    println(maxPromptLength)
+    var cwd: String =
+      if (promptifiedPath.length == 1) promptifiedPath(0)
+      else promptifiedPath.last
+
+    val parents: Seq[String] =
+      if (promptifiedPath.length == 1) Seq()
+      else promptifiedPath.init
+
+    cwd =
+      if (!path.canWrite) lock + " " + cwd
+      else cwd
+
+    val segments = parents.flatMap(part =>
+      Seq(Segment(s" $part ", theme.path), Segment(dirSeparator, theme.separator))
+    ) :+ Segment(s" $cwd ", theme.cwd)
+
     Section(segments)
   }
 
-  private[powerline] def vcsStatus(repo: VCSRepo) = {
-    val modifier =
-      if (repo.isClean) ""
-      else "*"
 
+  private[powerline] def vcsStatus(repo: VCSRepo) = {
     val extra = repo match {
       case g: GitRepo => gitExtra(g)
       case _ => ""
     }
 
     Section(Seq(Segment(
-      s" $vcsSymbol ${repo.currentBranch}$modifier $extra",
-      if (repo.isClean) theme.repoClean
-      else theme.repoDirty
+      s" $vcsSymbol ${repo.currentBranch} $extra",
+      if (repo.clean) theme.repoClean else theme.repoDirty
     )))
   }
 
   private[powerline] def gitExtra(repo: GitRepo): String = {
     val ahead = repo.ahead
 
-    val aText =
-      if (ahead > 0) s"↑$ahead"
-      else ""
+    val aText = ahead.filter(_ > 0).map(a => s"↑$a").getOrElse("")
 
     val behind = repo.behind
-    val bText =
-      if (behind > 0) s"↓$behind"
-      else ""
+    val bText = behind.filter(_ > 0).map(b => s"↓$b").getOrElse("")
 
     s"$aText $bText"
   }

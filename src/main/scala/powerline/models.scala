@@ -19,7 +19,8 @@ case class Request(
     username: String) extends {
 
   lazy val vcs: Option[VCSRepo] = GitRepo(cwd)
-
+  val maxPromptLengthPercent = 0.3f
+  val maxPromptLength = (winWidth * maxPromptLengthPercent).toInt
 }
 
 
