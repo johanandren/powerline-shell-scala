@@ -10,13 +10,13 @@ object GitRepo {
   // recursively looks for a git repo in the given path
   def apply(path: File): Option[GitRepo] =
     try {
-      if (path.getAbsolutePath == "/") None  // TODO bug in JGit ???
+      // if we got to root, bail
+      if (path.getAbsolutePath == "/") None
       else Some(new GitRepo(Git.open(path)))
     } catch {
       case e: Exception =>
         apply(path.getParentFile)
     }
-  
 }
 
 class GitRepo(git: Git) extends VCSRepo {
@@ -32,6 +32,10 @@ class GitRepo(git: Git) extends VCSRepo {
 
   def currentBranch =
     git.getRepository.getBranch
+
+  def close(): Unit = {
+    git.close()
+  }
 
 
 }

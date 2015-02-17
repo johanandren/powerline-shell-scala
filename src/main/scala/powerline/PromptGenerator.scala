@@ -23,22 +23,24 @@ final class PromptGenerator(config: AppConfig) {
 
   def generate(request: Request): Seq[Segment] = {
 
-    // calculate max length for PWD segments
+    val repo = request.vcs
 
     // create the basic segments
     val sections: Seq[Section] = Seq(
       Some(userSegments(request.username)),
       Some(pathSegments(request.cwd, request.home, request.maxPromptLength)),
-      request.vcs.map(vcsStatus)
+      repo.map(vcsStatus)
     ).flatten
+
+    repo.foreach(_.close())
 
     val promptWithSeparators = interleaveSeparators(sections)
 
     // handle prompt end differently, no separator between that and previous
-    promptWithSeparators :+ Segment(filledSeparator,
+    promptWithSeparators ++ Seq(Segment(filledSeparator,
       if (request.previousCmdStatus == 0) theme.cmdPassed
       else theme.cmdFailed
-    )
+    ), Segment(" ", theme.cmdPassed))
   }
 
   private[powerline] def interleaveSeparators(sections: Seq[Section]): Seq[Segment] = {
