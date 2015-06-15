@@ -50,7 +50,7 @@ final class PromptGenerator(config: AppConfig) {
 
     val segmentAndNext = options.zip(shifted)
 
-    segmentAndNext.map {
+    segmentAndNext.flatMap {
 
       case (Some(section), Some(next)) =>
         val sepFg = section.segments.last.style.bg
@@ -63,7 +63,7 @@ final class PromptGenerator(config: AppConfig) {
         // last element, don't add any separator
         section.segments
 
-    }.flatten
+    }
 
   }
 
