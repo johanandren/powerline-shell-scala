@@ -2,12 +2,14 @@ package powerline
 
 import java.io.{BufferedReader, File, InputStreamReader, PrintStream}
 import java.net.{InetAddress, ServerSocket, Socket}
+import java.util.concurrent.Executors
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
 class Server(config: AppConfig) {
+
+  implicit val ec = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(2))
 
   val generator = new PromptGenerator(config)
 
