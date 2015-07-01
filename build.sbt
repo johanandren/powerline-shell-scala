@@ -20,9 +20,7 @@ libraryDependencies ++= Seq(
   "com.typesafe" % "config" % "1.2.1",
   // JGit for interacting with Git repo
   "org.eclipse.jgit" % "org.eclipse.jgit" % "3.6.2.201501210735-r",
-  "org.scalatest" %% "scalatest" % "2.2.4" % "test",
-  // Akuma -- provides daemonization on posix os:es
-  "org.kohsuke" % "akuma" % "1.9"
+  "org.scalatest" %% "scalatest" % "2.2.4" % "test"
 )
 
 // sbt-assembly plugin settings
