@@ -8,7 +8,6 @@ name := "powerline-shell-scala"
 version := "0.1.0-SNAPSHOT"
 
 scalaVersion := "2.11.7"
-
 scalacOptions += "-deprecation"
 
 resolvers ++= Seq(
@@ -24,6 +23,9 @@ libraryDependencies ++= Seq(
   "org.eclipse.jgit" % "org.eclipse.jgit" % "3.6.2.201501210735-r",
   "org.scalatest" %% "scalatest" % "2.2.4" % "test"
 )
+
+fork in run := true
+javaOptions in run ++= Seq("-Xmx15m", "-Djava.awt.headless=true")
 
 // sbt-assembly plugin settings
 assemblySettings

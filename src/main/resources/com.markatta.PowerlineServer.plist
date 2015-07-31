@@ -8,7 +8,7 @@
     <key>ProgramArguments</key>
     <array>
         <string>/usr/bin/java</string>
-	<string>-Xmx15m</string>
+        <string>-Xmx15m</string>
         <string>-Djava.awt.headless=true</string>
         <string>-jar</string>
         <string>/Users/johan/Code/powerline-shell-scala/target/scala-2.11/powerline-shell-scala-assembly-0.1.0-SNAPSHOT.jar</string>

@@ -21,7 +21,7 @@ final class PromptGenerator(config: AppConfig) {
 
   private def theme = config.theme
 
-  def generate(request: Request): Seq[Segment] = {
+  def generate(request: PromptRequest): Seq[Segment] = {
 
     val repo = request.vcs
 

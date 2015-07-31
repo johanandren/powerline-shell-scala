@@ -22,7 +22,6 @@ object GitRepo {
 class GitRepo(git: Git) extends VCSRepo {
 
   lazy val status = git.status().call()
-  println(status.isClean + " " + status.hasUncommittedChanges() + " " + status.getUntracked)
   def clean = status.isClean
 
   lazy val trackingStatus = Option(BranchTrackingStatus.of(git.getRepository, git.getRepository.getBranch))

@@ -1,0 +1,17 @@
+#!/usr/bin/python
+import sys,socket,os
+
+if len(sys.argv) != 2:
+    print "usage: dir-history-search <query>"
+else:
+    conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    host = "localhost"
+    port = 18888
+    bufferSize = 1024
+    conn.connect((host, port))
+    message = "dirsearch\n" + sys.argv[1]
+    conn.send(message)
+    data = conn.recv(bufferSize)
+    conn.close()
+    print data
+

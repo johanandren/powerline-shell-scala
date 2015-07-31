@@ -10,15 +10,20 @@ case class AppConfig(
     debug: Boolean = false,
     serverPort: Int = 18888)
 
-case class Request(
+sealed trait Request
+
+case class DirHistorySearchReq(query: String) extends Request
+case class PromptRequest(
     shellName: String,
     cwd: File,
     previousCmdStatus: Int,
     winWidth: Int,
     home: File,
-    username: String) extends {
+    username: String) extends Request {
 
+  // TODO does not belong here!
   def vcs: Option[VCSRepo] = GitRepo(cwd)
+
   val maxPromptLengthPercent = 0.3f
   val maxPromptLength = (winWidth * maxPromptLengthPercent).toInt
 }
