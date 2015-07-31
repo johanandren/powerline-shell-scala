@@ -2,7 +2,7 @@ package powerline
 
 import java.io.File
 
-import powerline.vcs.{GitRepo, VCSRepo}
+import powerline.vcs.{RepoStatus, Repositories, GitRepo}
 
 object PromptGenerator {
 
@@ -21,18 +21,14 @@ final class PromptGenerator(config: AppConfig) {
 
   private def theme = config.theme
 
-  def generate(request: PromptRequest): Seq[Segment] = {
-
-    val repo = request.vcs
+  def generate(request: PromptRequest, repoStatus: Option[RepoStatus]): Seq[Segment] = {
 
     // create the basic segments
     val sections: Seq[Section] = Seq(
       Some(userSegments(request.username)),
       Some(pathSegments(request.cwd, request.home, request.maxPromptLength)),
-      repo.map(vcsStatus)
+      repoStatus.map(vcsStatus)
     ).flatten
-
-    repo.foreach(_.close())
 
     val promptWithSeparators = interleaveSeparators(sections)
 
@@ -96,25 +92,21 @@ final class PromptGenerator(config: AppConfig) {
   }
 
 
-  private[powerline] def vcsStatus(repo: VCSRepo) = {
-    val extra = repo match {
-      case g: GitRepo => gitExtra(g)
-      case _ => ""
-    }
-
+  private[powerline] def vcsStatus(status: RepoStatus) = {
+    val bStatus = branchStatus(status)
     Section(Seq(Segment(
-      s" $vcsSymbol ${repo.currentBranch}$extra",
-      if (repo.clean) theme.repoClean else theme.repoDirty
+      s" $vcsSymbol ${status.label}$bStatus",
+      if (status.dirty) theme.repoDirty else theme.repoClean
     )))
   }
 
-  private[powerline] def gitExtra(repo: GitRepo): String = {
-    val ahead = repo.ahead
-    val behind = repo.behind
+  private[powerline] def branchStatus(status: RepoStatus): String = {
+    val ahead = status.ahead
+    val behind = status.behind
 
-    if (ahead.isDefined || behind.isDefined) {
-      val aText = ahead.filter(_ > 0).map(a => s"↑$a").getOrElse("")
-      val bText = behind.filter(_ > 0).map(b => s"↓$b").getOrElse("")
+    if (ahead > 0 || behind > 0) {
+      val aText = if (ahead > 0) s"↑$ahead" else ""
+      val bText = if (behind > 0) s"↓$behind" else ""
 
       s" $aText $bText"
     } else {

@@ -2,7 +2,7 @@ package powerline
 
 import java.io.File
 
-import powerline.vcs.{GitRepo, VCSRepo}
+import powerline.vcs.GitRepo
 
 
 case class AppConfig(
@@ -20,9 +20,6 @@ case class PromptRequest(
     winWidth: Int,
     home: File,
     username: String) extends Request {
-
-  // TODO does not belong here!
-  def vcs: Option[VCSRepo] = GitRepo(cwd)
 
   val maxPromptLengthPercent = 0.3f
   val maxPromptLength = (winWidth * maxPromptLengthPercent).toInt
