@@ -24,7 +24,7 @@ object DirectoryHistory {
     lazy val score: Long = {
       // score algo that balances how recently it was visited and how many times
       val daysSinceLastVisit = (System.currentTimeMillis - lastVisit) / msInADay
-      (visits * 100) / math.max(1, daysSinceLastVisit)
+      (visits.toDouble / math.max(1, daysSinceLastVisit)).toLong
     }
   }
 
@@ -52,7 +52,7 @@ object DirectoryHistory {
 
 }
 
-class DirectoryHistory(maxHistorySize: Int = 20) extends Actor with ActorLogging {
+class DirectoryHistory(maxHistorySize: Int = 60) extends Actor with ActorLogging {
 
   import DirectoryHistory._
 
