@@ -24,6 +24,7 @@ object RequestHandler {
     data.decodeString("UTF-8").split('\n').toSeq match {
       case "prompt" +: rest => parsePromptRequest(rest)
       case "dirsearch" +: rest => parseDirSearchRequest(rest)
+      case Seq("lastdir") => LastDirRequest
       case wat +: _ => throw new RuntimeException(s"Unknown request type $wat")
       case _ => throw new RuntimeException("Malformed request")
     }
@@ -62,6 +63,7 @@ class RequestHandler(config: AppConfig, directoryHistory: ActorRef, repositories
       (parseRequest(data) match {
         case prompt: PromptRequest => handlePromptRequest(prompt)
         case dir: DirHistorySearchReq => handleDirSearchReq(dir)
+        case LastDirRequest => handleLastDirRequest()
       }).map(result => Response(recipient, result))
         .pipeTo(self)
 
@@ -81,6 +83,15 @@ class RequestHandler(config: AppConfig, directoryHistory: ActorRef, repositories
 
   val generator = new PromptGenerator(config)
 
+
+  def handleLastDirRequest(): Future[ByteString] = {
+    implicit val timeout = Timeout(2.seconds)
+    (directoryHistory ? DirectoryHistory.GetLastDirectory)
+      .mapTo[DirectoryHistory.LastDirectory]
+      .map { result =>
+      ByteString(result.directory.fold("")(_.getAbsolutePath))
+    }
+  }
 
   def handleDirSearchReq(request: DirHistorySearchReq): Future[ByteString] = {
     implicit val timeout = Timeout(2.seconds)

@@ -11,6 +11,8 @@ object DirectoryHistory {
   case class DirectoryVisited(path: File)
   case class Query(query: String)
   case class Result(path: Option[File])
+  case object GetLastDirectory
+  case class LastDirectory(directory: Option[File])
 
 
   def props = Props(new DirectoryHistory)
@@ -59,6 +61,10 @@ class DirectoryHistory(maxHistorySize: Int = 60) extends Actor with ActorLogging
   case object PruneHistory
   import context.dispatcher
 
+  // we don't persist this, it's just to know what directory we last entered
+  // for example for going there in a new tab
+  var lastDirectory: Option[File] = None
+
   val cancelable = context.system.scheduler.schedule(1 minute, 1 minute, self, PruneHistory)
 
   var history = TreeMap.empty[File, DirectoryEntry] withDefault (file => DirectoryEntry(file, 0, 0))
@@ -67,6 +73,7 @@ class DirectoryHistory(maxHistorySize: Int = 60) extends Actor with ActorLogging
   override def receive: Receive = {
 
     case DirectoryVisited(path) =>
+      lastDirectory = Some(path)
       history = history + (path -> history(path).visit)
       pruneHistory()
 
@@ -78,6 +85,9 @@ class DirectoryHistory(maxHistorySize: Int = 60) extends Actor with ActorLogging
       val result = search(query, history.values.map(_.path))
       sender() ! Result(result)
       log.info(s"Search for $query found $result")
+
+    case GetLastDirectory =>
+      sender() ! LastDirectory(lastDirectory)
 
   }
 

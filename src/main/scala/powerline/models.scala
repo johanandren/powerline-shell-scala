@@ -12,6 +12,7 @@ case class AppConfig(
 
 sealed trait Request
 
+case object LastDirRequest extends Request
 case class DirHistorySearchReq(query: String) extends Request
 case class PromptRequest(
     shellName: String,

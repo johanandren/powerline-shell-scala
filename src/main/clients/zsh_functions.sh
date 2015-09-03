@@ -15,3 +15,10 @@ function q() {
         fi
     fi
 }
+
+function gotoLastDir() {
+    DIR=$($QDIR/get-last-dir)
+    if [ "$DIR" ]; then
+        cd $DIR
+    fi
+}
