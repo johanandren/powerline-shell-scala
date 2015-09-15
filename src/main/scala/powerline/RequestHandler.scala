@@ -126,6 +126,7 @@ class RequestHandler(config: AppConfig, directoryHistory: ActorRef, repositories
     for {
       repoStatus <- repoStatusF
     } yield {
+      log.info("Repo status: {}", repoStatus)
       val prompt = generator.generate(request, repoStatus)
       val promptText = renderer(prompt)
 

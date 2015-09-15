@@ -4,7 +4,7 @@ import java.io._
 
 import akka.io.Tcp.{Write, Received, PeerClosed}
 import powerline.DirectoryHistory.DirectoryVisited
-import powerline.vcs.Repositories
+import powerline.vcs.{RepositySupervisor, Repositories}
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -23,7 +23,7 @@ class Server(config: AppConfig) extends Actor with ActorLogging {
   IO(Tcp) ! Bind(self, new InetSocketAddress("localhost", 18888))
 
   val directoryHistory = context.actorOf(DirectoryHistory.props, "directory-history")
-  val repositories = context.actorOf(Repositories.props, "repositories")
+  val repositories = context.actorOf(RepositySupervisor.props, "repos")
 
   def receive = {
     case b@Bound(localAddress) =>
