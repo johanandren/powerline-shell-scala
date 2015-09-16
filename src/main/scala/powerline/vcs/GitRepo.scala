@@ -2,29 +2,21 @@ package powerline.vcs
 
 import java.io.File
 
-import org.eclipse.jgit.api.Git
-import org.eclipse.jgit.lib.BranchTrackingStatus
-
+import scala.sys.process._
 
 case class GitRepo(path: File) extends Repository {
 
-  private val git = Git.open(path)
-
   def status = {
-    val gitStatus = git.status().call()
-    val branchName = git.getRepository.getBranch
-    val branchStatus = Option(BranchTrackingStatus.of(git.getRepository, branchName))
+    val branchName = Process(Seq("git", "symbolic-ref", "--short", "HEAD"), Some(path)).!!.trim
 
-    RepoStatus(
-      dirty = !gitStatus.isClean,
-      behind = branchStatus.fold(0)(_.getBehindCount),
-      ahead = branchStatus.fold(0)(_.getAheadCount),
-      label = branchName
-    )
+    val dirty = Process(Seq("git", "status", "--porcelain"), Some(path)).lineStream.toSeq.nonEmpty
+    val behind = Process(Seq("git", "rev-list", "HEAD..origin", "--count"), Some(path)).!!.trim.toInt
+    val ahead = Process(Seq("git", "rev-list", "origin..HEAD", "--count"), Some(path)).!!.trim.toInt
+
+    RepoStatus(dirty, behind, ahead, branchName)
   }
 
   def close(): Unit = {
-    git.close()
   }
 
 }

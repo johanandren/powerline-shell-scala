@@ -5,6 +5,7 @@ import java.io.File
 import akka.actor.{ActorLogging, Props, Actor}
 import powerline.FileSystem
 
+import scala.annotation.tailrec
 import scala.concurrent.duration._
 
 
@@ -54,7 +55,7 @@ class Repositories(maxRepoAge: FiniteDuration) extends Actor with ActorLogging {
 
   }
 
-  def touchRepo(repo: Repository): Unit = {
+  private def touchRepo(repo: Repository): Unit = {
     val index = repositories.indexWhere(_.repo == repo)
     if (index > 0) {
       val entry = repositories(index)
@@ -62,17 +63,20 @@ class Repositories(maxRepoAge: FiniteDuration) extends Actor with ActorLogging {
     }
   }
 
-  def knownRepo(file: File): Option[Repository] =
+  private def knownRepo(file: File): Option[Repository] =
     repositories.collectFirst {
       case Entry(`file`, _, repo) => repo
       case Entry(path, _, repo) if FileSystem.isInside(file, path) => repo
     }
 
-  def findRepo(path: File): Some[Repository] = {
+  @tailrec
+  private def findRepo(path: File): Option[Repository] = {
     if (path == null) None
-    val git = new File(path, ".git")
-    if (git.exists()) Some(GitRepo(git))
-    else findRepo(path.getParentFile)
+    else {
+      val git = new File(path, ".git")
+      if (git.exists()) Some(GitRepo(path))
+      else findRepo(path.getParentFile)
+    }
   }
 
 

@@ -19,8 +19,6 @@ libraryDependencies ++= Seq(
   "com.typesafe" % "config" % "1.2.1",
   "com.typesafe.akka" %% "akka-actor" % "2.3.12",
 
-  // JGit for interacting with Git repo
-  "org.eclipse.jgit" % "org.eclipse.jgit" % "3.6.2.201501210735-r",
   "org.scalatest" %% "scalatest" % "2.2.4" % "test"
 )
 

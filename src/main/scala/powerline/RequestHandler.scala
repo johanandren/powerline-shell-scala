@@ -105,7 +105,7 @@ class RequestHandler(config: AppConfig, directoryHistory: ActorRef, repositories
   def handlePromptRequest(request: PromptRequest): Future[ByteString] = {
 
     val repoStatusF = {
-      implicit val timeout = Timeout(2 seconds)
+      implicit val timeout = Timeout(500 millis)
       (repositories ? Repositories.GetRepoStatus(request.cwd))
         .mapTo[Repositories.Result]
         .map(_.status)
@@ -126,7 +126,6 @@ class RequestHandler(config: AppConfig, directoryHistory: ActorRef, repositories
     for {
       repoStatus <- repoStatusF
     } yield {
-      log.info("Repo status: {}", repoStatus)
       val prompt = generator.generate(request, repoStatus)
       val promptText = renderer(prompt)
 
