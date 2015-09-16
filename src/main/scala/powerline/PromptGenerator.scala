@@ -110,7 +110,7 @@ final class PromptGenerator(config: AppConfig) {
 
       s" $aText $bText"
     } else {
-      ""
+      " "
     }
   }
 
