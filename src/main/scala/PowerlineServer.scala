@@ -5,11 +5,13 @@ import powerline.{AppConfig, Server, Theme}
 object PowerlineServer extends App {
 
   val argList = args.toList
+  val system = ActorSystem("main")
+
+  system.log.info("Starting with args {}", argList)
 
   val debug = argList.contains("-debug")
-  val config = AppConfig(debug = debug, theme = Theme.load("darcula"))
+  val config = AppConfig(debug = debug, theme = Theme.load(argList(0)))
 
-  val system = ActorSystem("main")
 
   val server = system.actorOf(Props(new Server(config)), "server")
   system.awaitTermination()

@@ -4,20 +4,23 @@ import sys,socket,os
 if len(sys.argv) != 3:
     print "usage: powerline-client <SHELL> <prev-cmd-exit-status>"
 else:
-    conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    host = "localhost"
-    port = 18888
-    bufferSize = 1024
-    shell = sys.argv[1]
-    previousReturn = sys.argv[2]
-    cwd = os.getcwd()
-    home = os.environ['HOME']
-    user = os.environ['USER']
-    rows, columns = os.popen('stty size', 'r').read().split()
-    conn.connect((host, port))
-    message = "prompt\n" + shell + "\n" + cwd + "\n" + previousReturn + "\n" + str(columns) + "\n" + home + "\n" + user + "\n"
-    conn.send(message)
-    data = conn.recv(bufferSize)
-    conn.close()
-    print data
+    try:
+        conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        host = "localhost"
+        port = 18888
+        bufferSize = 1024
+        shell = sys.argv[1]
+        previousReturn = sys.argv[2]
+        cwd = os.getcwd()
+        home = os.environ['HOME']
+        user = os.environ['USER']
+        rows, columns = os.popen('stty size', 'r').read().split()
+        conn.connect((host, port))
+        message = "prompt\n" + shell + "\n" + cwd + "\n" + previousReturn + "\n" + str(columns) + "\n" + home + "\n" + user + "\n"
+        conn.send(message)
+        data = conn.recv(bufferSize)
+        conn.close()
+        print data
+    except:
+        print "(prompt-bling-failure) $ "
 
