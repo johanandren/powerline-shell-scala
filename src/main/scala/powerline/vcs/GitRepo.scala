@@ -3,30 +3,45 @@ package powerline.vcs
 import java.io.File
 
 import scala.sys.process._
+import scala.util.Try
+import scala.util.parsing.combinator.{RegexParsers, JavaTokenParsers}
 
-case class GitRepo(path: File) extends Repository {
+object GitRepo {
 
-  def status = {
-    val revParseOutput = Process(Seq("git", "rev-parse", "--abbrev-ref", "HEAD"), Some(path)).!!.trim
+  def status(dir: File): Try[RepoStatus] = {
+    Try {
+      def sh(cmd: String, args: String*): ProcessBuilder =
+        Process(cmd +: args.toSeq, dir)
 
-    if (revParseOutput != "HEAD") {
-      val label = revParseOutput
-      val remote = s"origin/$label"
-      val dirty = Process(Seq("git", "status", "--porcelain"), Some(path)).lineStream.toSeq.nonEmpty
-      val behind = Process(Seq("git", "rev-list", s"HEAD..$remote", "--count"), Some(path)).!!.trim.toInt
-      val ahead = Process(Seq("git", "rev-list", s"$remote..HEAD", "--count"), Some(path)).!!.trim.toInt
+      val revParseOutput = sh("git", "rev-parse", "--abbrev-ref", "HEAD").!!.trim
 
-      RepoStatus(dirty, behind, ahead, label)
-    } else {
+      if (revParseOutput != "HEAD") {
+        val label = revParseOutput
+        val remote = s"origin/$label"
+        val dirty = sh("git", "status", "--porcelain").lineStream.toSeq.nonEmpty
 
-      // detached, use short checksum
-      val label = Process(Seq("git", "rev-parse", "--short", "HEAD")).!!.trim
-      RepoStatus(false, 0, 0, label)
+        val (behind, ahead, hasRemote) = try {
+          val behind = sh("git", "rev-list", s"HEAD..$remote", "--count").!!.trim.toInt
+          val ahead = sh("git", "rev-list", s"$remote..HEAD", "--count").!!.trim.toInt
+          (behind, ahead, true)
+        } catch {
+          case _: Exception => (0, 0, false)
+        }
+
+        RepoStatus(dirty, behind, ahead, label, hasRemote = hasRemote, detached = false)
+      } else {
+
+        // detached, use short checksum
+        val label = sh("git", "rev-parse", "--short", "HEAD").!!.trim
+        RepoStatus(
+          dirty = false,
+          behind = 0,
+          ahead = 0,
+          label = label,
+          hasRemote = false,
+          detached = true)
+      }
     }
-
-  }
-
-  def close(): Unit = {
   }
 
 }

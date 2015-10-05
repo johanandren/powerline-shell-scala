@@ -86,10 +86,13 @@ object PromptGenerator {
 
 
   private[powerline] def vcsStatus(status: RepoStatus, theme: Theme) = {
+    println(status)
     val bStatus = branchStatus(status)
     Section(Seq(Segment(
       s" $vcsSymbol ${status.label}$bStatus",
-      if (status.dirty) theme.repoDirty else theme.repoClean
+      if (status.dirty) theme.repoDirty
+      else if (status.detached) theme.repoDetached
+      else theme.repoClean
     )))
   }
 

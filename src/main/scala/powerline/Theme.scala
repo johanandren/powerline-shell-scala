@@ -8,7 +8,6 @@ object Theme {
 
   def load(name: String): Try[Theme] = Try {
     val config = ConfigFactory.load(s"$name")
-    println(config.origin().resource())
     val colorConfig = config.getConfig("theme.colors")
 
     def style(fgKey: String, bgKey: String) =
@@ -21,6 +20,7 @@ object Theme {
       separator = style("separator.fg", "separator.bg"),
       repoClean = style("repo.clean.fg", "repo.clean.bg"),
       repoDirty = style("repo.dirty.fg", "repo.dirty.bg"),
+      repoDetached = style("repo.detached.fg", "repo.detached.bg"),
       cmdPassed = style("lastCmd.passed.fg", "lastCmd.passed.bg"),
       cmdFailed = style("lastCmd.failed.fg", "lastCmd.failed.bg")
     )
@@ -36,6 +36,7 @@ case class Theme(
     separator: Style,
     repoClean: Style,
     repoDirty: Style,
+    repoDetached: Style,
     cmdPassed: Style,
     cmdFailed: Style)
 

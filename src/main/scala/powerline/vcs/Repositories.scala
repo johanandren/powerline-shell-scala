@@ -7,6 +7,7 @@ import powerline.FileSystem
 
 import scala.annotation.tailrec
 import scala.concurrent.duration._
+import scala.util.{Failure, Success}
 
 
 object Repositories {
@@ -15,7 +16,7 @@ object Repositories {
   case class GetRepoStatus(path: File)
   case class Result(status: Option[RepoStatus])
 
-  def props = Props(new Repositories(30 minutes))
+  def props = Props(new Repositories)
 
 }
 
@@ -23,65 +24,20 @@ object Repositories {
 /**
  * Maintains a cache of known, recently accessed repositories to quicken up access
  */
-class Repositories(maxRepoAge: FiniteDuration) extends Actor with ActorLogging {
+class Repositories extends Actor with ActorLogging {
 
   import Repositories._
-
-  case object CleanOut
-  import context.dispatcher
-
-  val tick = context.system.scheduler.schedule(maxRepoAge / 2, maxRepoAge / 2, self, CleanOut)
-
-  case class Entry(path: File, lastTouched: Long, repo: Repository)
-
-  var repositories = Seq.empty[Entry]
 
   def receive = {
 
     case GetRepoStatus(path) =>
-      val maybeRepo: Option[Repository] = knownRepo(path) orElse {
-        val maybeNewRepo = findRepo(path)
-        maybeNewRepo.foreach(repo => repositories :+ Entry(path, System.currentTimeMillis(), repo))
-        maybeNewRepo
+      GitRepo.status(path) match {
+        case Success(status) => sender() ! Result(Some(status))
+        case Failure(ex) =>
+          //log.error(ex, "Failed to read git status of {}", path)
+          sender() ! Result(None)
       }
-      sender() ! Result(maybeRepo.map(_.status))
-      maybeRepo.foreach(touchRepo)
-
-    case CleanOut =>
-      val timeout = System.currentTimeMillis() - maxRepoAge.toMillis
-      val (tooOld, keepThese) = repositories.partition(_.lastTouched < timeout)
-      repositories = keepThese
-      tooOld.foreach(_.repo.close())
 
   }
 
-  private def touchRepo(repo: Repository): Unit = {
-    val index = repositories.indexWhere(_.repo == repo)
-    if (index > 0) {
-      val entry = repositories(index)
-      repositories = repositories.updated(index, entry.copy(lastTouched = System.currentTimeMillis()))
-    }
-  }
-
-  private def knownRepo(file: File): Option[Repository] =
-    repositories.collectFirst {
-      case Entry(`file`, _, repo) => repo
-      case Entry(path, _, repo) if FileSystem.isInside(file, path) => repo
-    }
-
-  @tailrec
-  private def findRepo(path: File): Option[Repository] = {
-    if (path == null) None
-    else {
-      val git = new File(path, ".git")
-      if (git.exists()) Some(GitRepo(path))
-      else findRepo(path.getParentFile)
-    }
-  }
-
-
-  override def postStop(): Unit = {
-    repositories.foreach(_.repo.close())
-    tick.cancel()
-  }
 }
