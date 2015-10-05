@@ -82,11 +82,13 @@ class DirectoryHistory(maxHistorySize: Int = 60) extends Actor with ActorLogging
       save()
 
     case Query(query) =>
+      pruneHistory()
       val result = search(query, history.values.map(_.path))
       sender() ! Result(result)
       log.info(s"Search for $query found $result")
 
     case GetLastDirectory =>
+      pruneHistory()
       sender() ! LastDirectory(lastDirectory)
 
   }
@@ -94,6 +96,7 @@ class DirectoryHistory(maxHistorySize: Int = 60) extends Actor with ActorLogging
 
 
   def pruneHistory(): Unit = {
+    history = history.filter(_._1.exists())
     if (history.size > maxHistorySize) {
       history = history.take(maxHistorySize)
     }
