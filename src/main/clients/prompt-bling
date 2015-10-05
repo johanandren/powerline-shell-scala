@@ -1,22 +1,26 @@
 #!/usr/bin/python
+#
 import sys,socket,os
 
-if len(sys.argv) != 3:
-    print "usage: powerline-client <SHELL> <prev-cmd-exit-status>"
+if len(sys.argv) != 4:
+    print "usage: powerline-client <theme> <SHELL> <prev-cmd-exit-status>"
 else:
     try:
         conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         host = "localhost"
         port = 18888
         bufferSize = 1024
-        shell = sys.argv[1]
-        previousReturn = sys.argv[2]
+        theme = sys.argv[1]
+        shell = sys.argv[2]
+        previousReturn = sys.argv[3]
         cwd = os.getcwd()
         home = os.environ['HOME']
         user = os.environ['USER']
         rows, columns = os.popen('stty size', 'r').read().split()
+        if columns == "":
+            columns = os.environ("COLUMNS")
         conn.connect((host, port))
-        message = "prompt\n" + shell + "\n" + cwd + "\n" + previousReturn + "\n" + str(columns) + "\n" + home + "\n" + user + "\n"
+        message = "prompt\n" + theme +"\n" + shell + "\n" + cwd + "\n" + previousReturn + "\n" + str(columns) + "\n" + home + "\n" + user + "\n"
         conn.send(message)
         data = conn.recv(bufferSize)
         conn.close()

@@ -10,15 +10,15 @@ import powerline.vcs.Repositories
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.util.Failure
+import scala.util.{Try, Failure}
 
 /**
  * The request handler handles one request and then shuts down
  */
 object RequestHandler {
 
-  def props(config: AppConfig, directoryHistory: ActorRef, repositories: ActorRef) =
-    Props(new RequestHandler(config, directoryHistory, repositories))
+  def props(config: AppConfig, directoryHistory: ActorRef, repositories: ActorRef, themes: ActorRef) =
+    Props(new RequestHandler(config, directoryHistory, repositories, themes))
 
   def parseRequest(data: ByteString): Request = {
     data.decodeString("UTF-8").split('\n').toSeq match {
@@ -31,17 +31,19 @@ object RequestHandler {
   }
 
   def parsePromptRequest(data: Seq[String]): PromptRequest = {
-    val in = data.toIndexedSeq
-    val shell = in(0)
-    val currentDirectory = in(1)
-    val previousStatusTxt = in(2)
+    val theme +: shell +: currentDirectory +: previousStatusTxt +: winWidthTxt +: home +: user +: _ =
+      data.toIndexedSeq
     val previousStatus = previousStatusTxt.toInt
-    val winWidthTxt = in(3)
-    val winWidth = winWidthTxt.toInt
-    val home = in(4)
-    val user = in(5)
+    val winWidth = Try { winWidthTxt.toInt }.toOption
 
-    PromptRequest(shell, new File(currentDirectory), previousStatus, winWidth, new File(home), user)
+    PromptRequest(
+      theme,
+      shell,
+      new File(currentDirectory),
+      previousStatus,
+      winWidth,
+      new File(home),
+      user)
   }
 
   def parseDirSearchRequest(data: Seq[String]): DirHistorySearchReq = {
@@ -50,7 +52,7 @@ object RequestHandler {
 
 }
 
-class RequestHandler(config: AppConfig, directoryHistory: ActorRef, repositories: ActorRef) extends Actor with ActorLogging {
+class RequestHandler(config: AppConfig, directoryHistory: ActorRef, repositories: ActorRef, themes: ActorRef) extends Actor with ActorLogging {
 
   import RequestHandler._
   import context.dispatcher
@@ -80,10 +82,6 @@ class RequestHandler(config: AppConfig, directoryHistory: ActorRef, repositories
       context stop self
   }
 
-
-  val generator = new PromptGenerator(config)
-
-
   def handleLastDirRequest(): Future[ByteString] = {
     implicit val timeout = Timeout(2.seconds)
     (directoryHistory ? DirectoryHistory.GetLastDirectory)
@@ -104,18 +102,22 @@ class RequestHandler(config: AppConfig, directoryHistory: ActorRef, repositories
 
   def handlePromptRequest(request: PromptRequest): Future[ByteString] = {
 
-    val repoStatusF = {
-      implicit val timeout = Timeout(500 millis)
+    implicit val timeout = Timeout(500 millis)
+
+    val themeF =
+      (themes ? ThemeRepository.GetTheme(request.theme))
+        .mapTo[ThemeRepository.ThemeResult]
+        .map(_.theme)
+
+    val repoStatusF =
       (repositories ? Repositories.GetRepoStatus(request.cwd))
         .mapTo[Repositories.Result]
         .map(_.status)
         .recover {
         case _: AskTimeoutException => None
       }
-    }
 
     directoryHistory ! DirectoryHistory.DirectoryVisited(request.cwd)
-
 
     val renderer: Seq[Segment] => String = request.shellName.toLowerCase match {
       case "bash" => shells.BashPrompt.render
@@ -125,8 +127,9 @@ class RequestHandler(config: AppConfig, directoryHistory: ActorRef, repositories
 
     for {
       repoStatus <- repoStatusF
+      theme <- themeF
     } yield {
-      val prompt = generator.generate(request, repoStatus)
+      val prompt = PromptGenerator.generate(theme, request, repoStatus)
       val promptText = renderer(prompt)
 
       log.debug(s"Prompt: $promptText")

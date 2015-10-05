@@ -6,15 +6,20 @@ object Path {
 
   val homeSymbol = "~"
 
-  def promptify(path: File, home: File, maxLength: Int): Seq[String] =
+  def promptify(path: File, home: File, maxLength: Option[Int]): Seq[String] =
     promptify(
       path.getAbsolutePath.split('/').filter(_.nonEmpty),
       home.getAbsolutePath.split('/').filter(_.nonEmpty),
       maxLength
     )
 
-  def promptify(path: Seq[String], home: Seq[String], maxLength: Int): Seq[String] = {
-    shorten(handleRoot(replaceHome(path, home)), maxLength)
+  def promptify(path: Seq[String], home: Seq[String], maxLength: Option[Int]): Seq[String] = {
+    val prompt = handleRoot(replaceHome(path, home))
+    maxLength.fold(
+      prompt
+    )(maxLength =>
+      shorten(prompt, maxLength)
+    )
   }
 
   def replaceHome(path: Seq[String], home: Seq[String]): Seq[String] =

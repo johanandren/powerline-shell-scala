@@ -1,19 +1,10 @@
 package powerline
 
-import java.io._
-
-import akka.io.Tcp.{Write, Received, PeerClosed}
-import powerline.DirectoryHistory.DirectoryVisited
-import powerline.vcs.{RepositySupervisor, Repositories}
-
-import scala.concurrent.Future
-import scala.concurrent.duration._
-import scala.util.Failure
-import akka.actor._
-import akka.io.{ IO, Tcp }
-import akka.util.{Timeout, ByteString}
-import akka.pattern.{pipe, ask}
 import java.net.InetSocketAddress
+
+import akka.actor._
+import akka.io.{IO, Tcp}
+import powerline.vcs.RepositySupervisor
 
 class Server(config: AppConfig) extends Actor with ActorLogging {
 
@@ -24,6 +15,7 @@ class Server(config: AppConfig) extends Actor with ActorLogging {
 
   val directoryHistory = context.actorOf(DirectoryHistory.props, "directory-history")
   val repositories = context.actorOf(RepositySupervisor.props, "repos")
+  val themes = context.actorOf(ThemeSupervisor.props, "themes")
 
   def receive = {
     case b@Bound(localAddress) =>
@@ -34,7 +26,7 @@ class Server(config: AppConfig) extends Actor with ActorLogging {
       context.system.shutdown()
 
     case c@Connected(remote, local) =>
-      val handler = context.actorOf(Props(new RequestHandler(config, directoryHistory, repositories)))
+      val handler = context.actorOf(RequestHandler.props(config, directoryHistory, repositories, themes))
       val connection = sender()
       connection ! Register(handler)
   }

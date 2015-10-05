@@ -2,7 +2,7 @@ package powerline
 
 import java.io.File
 
-import powerline.vcs.{RepoStatus, Repositories, GitRepo}
+import powerline.vcs.RepoStatus
 
 object PromptGenerator {
 
@@ -13,21 +13,14 @@ object PromptGenerator {
   val dirSeparator = thinSeparator
   val vcsSymbol = "\uE0A0"
   val lock = "\uD83D\uDD12"
-}
 
-final class PromptGenerator(config: AppConfig) {
-
-  import powerline.PromptGenerator._
-
-  private def theme = config.theme
-
-  def generate(request: PromptRequest, repoStatus: Option[RepoStatus]): Seq[Segment] = {
+  def generate(theme: Theme, request: PromptRequest, repoStatus: Option[RepoStatus]): Seq[Segment] = {
 
     // create the basic segments
     val sections: Seq[Section] = Seq(
-      Some(userSegments(request.username)),
-      Some(pathSegments(request.cwd, request.home, request.maxPromptLength)),
-      repoStatus.map(vcsStatus)
+      Some(userSegments(request.username, theme)),
+      Some(pathSegments(request.cwd, request.home, request.maxPromptLength, theme)),
+      repoStatus.map(status => vcsStatus(status, theme))
     ).flatten
 
     val promptWithSeparators = interleaveSeparators(sections)
@@ -64,15 +57,15 @@ final class PromptGenerator(config: AppConfig) {
   }
 
 
-  private[powerline] def userSegments(user: String) =
+  private[powerline] def userSegments(user: String, theme: Theme) =
     Section(Seq(Segment(s" $user ", theme.user)))
 
 
-  private[powerline] def pathSegments(path: File, home: File, maxPromptLength: Int): Section = {
+  private[powerline] def pathSegments(path: File, home: File, maxPromptLength: Option[Int], theme: Theme): Section = {
     val promptifiedPath = Path.promptify(path, home, maxPromptLength)
 
     var cwd: String =
-      if (promptifiedPath.length == 1) promptifiedPath(0)
+      if (promptifiedPath.length == 1) promptifiedPath.head
       else promptifiedPath.last
 
     val parents: Seq[String] =
@@ -92,7 +85,7 @@ final class PromptGenerator(config: AppConfig) {
   }
 
 
-  private[powerline] def vcsStatus(status: RepoStatus) = {
+  private[powerline] def vcsStatus(status: RepoStatus, theme: Theme) = {
     val bStatus = branchStatus(status)
     Section(Seq(Segment(
       s" $vcsSymbol ${status.label}$bStatus",
@@ -114,7 +107,7 @@ final class PromptGenerator(config: AppConfig) {
     }
   }
 
-  private[powerline] def previousCmdIndicator(retCode: Int): Seq[Segment] =
+  private[powerline] def previousCmdIndicator(retCode: Int, theme: Theme): Seq[Segment] =
     Seq(Segment(
       s" $filledSeparator",
       if (retCode != 0) theme.cmdFailed

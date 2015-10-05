@@ -1,0 +1,5 @@
+# prompt
+BLING_THEME="darcula"
+precmd() {
+  export PROMPT="$(/where/you/got/powerline-shell-scala/src/main/clients/prompt-bling $BLING_THEME zsh $?)"
+}

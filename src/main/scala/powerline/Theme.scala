@@ -2,10 +2,13 @@ package powerline
 
 import com.typesafe.config.ConfigFactory
 
+import scala.util.Try
+
 object Theme {
 
-  def load(name: String): Theme = {
+  def load(name: String): Try[Theme] = Try {
     val config = ConfigFactory.load(s"$name")
+    println(config.origin().resource())
     val colorConfig = config.getConfig("theme.colors")
 
     def style(fgKey: String, bgKey: String) =
