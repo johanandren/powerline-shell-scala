@@ -11,5 +11,4 @@ object PowerlineServer extends App {
   val config = AppConfig(debug)
 
   val server = system.actorOf(Props(new Server(config)), "server")
-  system.awaitTermination()
 }

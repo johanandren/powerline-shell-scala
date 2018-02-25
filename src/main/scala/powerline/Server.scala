@@ -23,7 +23,7 @@ class Server(config: AppConfig) extends Actor with ActorLogging {
 
     case CommandFailed(_: Bind) =>
       log.error("Failed to bind server")
-      context.system.shutdown()
+      context.system.terminate()
 
     case c@Connected(remote, local) =>
       val handler = context.actorOf(RequestHandler.props(config, directoryHistory, repositories, themes))
